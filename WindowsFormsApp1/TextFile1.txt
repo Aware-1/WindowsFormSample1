@@ -1,0 +1,41 @@
+﻿ string query1 = @"
+         SELECT p.Id,p.Name, pp.Price 
+         FROM Products p
+         JOIN ProductPrices pp ON p.Id = pp.ProductId
+          WHERE pp.Active = 1 AND p.IsDelete = 0";
+
+            string query2 = @" SELECT Id, Name,IsDelete, (SELECT Price FROM
+          (SELECT TOP(1) pp.Price as Price, pp.startDate FROM ProductPrices as pp
+           WHERE pp.ProductId = p.Id order by pp.startDate desc) as temp
+          ) as Price
+          FROM Products as p";
+
+
+	private void buttonSearch_Click(object sender, EventArgs e)
+{
+    string searchText = textBox2.Text;
+    
+    string query = $@"SELECT
+        o.Id,
+        o.UserId,
+        o.IsFinally,
+        (SELECT u.Name 
+         FROM Users u 
+         WHERE u.Id = o.UserId) AS CustomerName
+        FROM Orders o
+        WHERE o.IsDelete = 0 AND 
+        (CAST(o.Id AS NVARCHAR) LIKE N'%{searchText}%' OR
+         CAST(o.UserId AS NVARCHAR) LIKE N'%{searchText}%' OR
+         CAST(o.IsFinally AS NVARCHAR) LIKE N'%{searchText}%' OR
+         (SELECT u.Name 
+          FROM Users u 
+          WHERE u.Id = o.UserId AND u.Name LIKE N'%{searchText}%') LIKE N'%{searchText}%')";
+
+    using (SqlConnection connection = new SqlConnection(connectionString))
+    {
+        SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
+        DataTable ordersTable = new DataTable();
+        adapter.Fill(ordersTable);
+        dataGridView1.DataSource = ordersTable;
+    }
+}
